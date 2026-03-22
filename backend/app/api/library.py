@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.api.error_handling import commit_with_rollback
 from app.engine import CrossTreeValidator
-from app.models.entities import Agent, AgentLibraryConsumer
+from app.models.entities import Agent, AgentLibraryConsumer, AgentTree
 from app.models.enums import AgentRole
 from app.schemas.domain import AgentLibraryConsumerCreate, AgentLibraryConsumerRead, AgentRead
 
@@ -32,13 +33,21 @@ def list_consumers(db: Session = Depends(get_db)) -> list[AgentLibraryConsumer]:
 def add_consumer(payload: AgentLibraryConsumerCreate, db: Session = Depends(get_db)) -> AgentLibraryConsumer:
     """Register a tree as a consumer of a shared agent."""
 
+    library_agent = db.get(Agent, payload.library_agent_id)
+    if not library_agent:
+        raise HTTPException(status_code=404, detail="Library agent not found")
+    if library_agent.role != AgentRole.SHARED:
+        raise HTTPException(status_code=400, detail="library_agent_id must reference a shared agent")
+    if not db.get(AgentTree, payload.consumer_tree_id):
+        raise HTTPException(status_code=404, detail="Consumer tree not found")
+
     link = AgentLibraryConsumer(
         library_agent_id=payload.library_agent_id,
         consumer_tree_id=payload.consumer_tree_id,
         integration_point=payload.integration_point,
     )
     db.add(link)
-    db.commit()
+    commit_with_rollback(db, "add library consumer")
     db.refresh(link)
     return link
 

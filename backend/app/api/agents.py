@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.models.entities import Agent
+from app.api.error_handling import commit_with_rollback, parse_enum_value
+from app.models.entities import Agent, AgentTree
 from app.models.enums import AgentRole, AgentType
 from app.schemas.domain import AgentCreate, AgentRead
 
@@ -27,12 +28,20 @@ def list_agents(tree_id: str | None = None, db: Session = Depends(get_db)) -> li
 def create_agent(payload: AgentCreate, db: Session = Depends(get_db)) -> Agent:
     """Create a new agent in a tree or the shared library."""
 
+    if payload.tree_id and not db.get(AgentTree, payload.tree_id):
+        raise HTTPException(status_code=404, detail="Tree not found")
+    if payload.parent_agent_id and not db.get(Agent, payload.parent_agent_id):
+        raise HTTPException(status_code=404, detail="Parent agent not found")
+
+    agent_type = parse_enum_value(payload.agent_type, AgentType, "agent_type")
+    role = parse_enum_value(payload.role, AgentRole, "role")
+
     agent = Agent(
         tree_id=payload.tree_id,
         library_id=payload.library_id,
         name=payload.name,
-        agent_type=AgentType(payload.agent_type),
-        role=AgentRole(payload.role),
+        agent_type=agent_type,
+        role=role,
         parent_agent_id=payload.parent_agent_id,
         instruction=payload.instruction,
         description=payload.description,
@@ -41,7 +50,7 @@ def create_agent(payload: AgentCreate, db: Session = Depends(get_db)) -> Agent:
         config_snapshot=payload.config_snapshot,
     )
     db.add(agent)
-    db.commit()
+    commit_with_rollback(db, "create agent")
     db.refresh(agent)
     return agent
 

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.api.error_handling import commit_with_rollback, parse_enum_value
 from app.engine import TreeAnalyzer
 from app.models.entities import Agent, AgentTree
 from app.models.enums import SourceType
@@ -25,14 +26,15 @@ def list_trees(db: Session = Depends(get_db)) -> list[AgentTree]:
 def create_tree(payload: AgentTreeCreate, db: Session = Depends(get_db)) -> AgentTree:
     """Create and persist a new agent tree."""
 
+    source_type = parse_enum_value(payload.source_type, SourceType, "source_type")
     tree = AgentTree(
         name=payload.name,
-        source_type=SourceType(payload.source_type),
+        source_type=source_type,
         source_ref=payload.source_ref,
         tree_profile=payload.tree_profile,
     )
     db.add(tree)
-    db.commit()
+    commit_with_rollback(db, "create tree")
     db.refresh(tree)
     return tree
 
@@ -127,7 +129,7 @@ def analyze_tree(tree_id: str, db: Session = Depends(get_db)) -> dict:
     profile = TreeAnalyzer().analyze(root).profile
     tree.tree_profile = profile
     db.add(tree)
-    db.commit()
+    commit_with_rollback(db, "update tree analysis profile")
 
     return profile
 

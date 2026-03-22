@@ -8,9 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.api.error_handling import commit_with_rollback
 from app.core.live import live_manager
 from app.engine import BriefingGenerator, StrategyGenerator
-from app.models.entities import Experiment, ResearchMemory, TrainingSession
+from app.models.entities import AgentTree, EvalSuite, Experiment, ResearchMemory, TrainingSession
 from app.models.enums import SessionStatus
 from app.schemas.domain import BriefingResponse, TrainingSessionCreate, TrainingSessionRead, WizardConfigRequest
 
@@ -31,6 +32,15 @@ def list_sessions(tree_id: str | None = None, db: Session = Depends(get_db)) -> 
 def create_session(payload: TrainingSessionCreate, db: Session = Depends(get_db)) -> TrainingSession:
     """Create a draft training session."""
 
+    tree = db.get(AgentTree, payload.tree_id)
+    if not tree:
+        raise HTTPException(status_code=404, detail="Tree not found")
+    eval_suite = db.get(EvalSuite, payload.eval_suite_id)
+    if not eval_suite:
+        raise HTTPException(status_code=404, detail="Eval suite not found")
+    if eval_suite.tree_id != tree.id:
+        raise HTTPException(status_code=400, detail="Eval suite does not belong to the provided tree")
+
     session = TrainingSession(
         tree_id=payload.tree_id,
         eval_suite_id=payload.eval_suite_id,
@@ -42,7 +52,7 @@ def create_session(payload: TrainingSessionCreate, db: Session = Depends(get_db)
         final_scores={"overall": 0.62},
     )
     db.add(session)
-    db.commit()
+    commit_with_rollback(db, "create training session")
     db.refresh(session)
     return session
 
@@ -67,7 +77,7 @@ def configure_session(session_id: str, payload: WizardConfigRequest, db: Session
 
     session.allowed_levels = payload.optimization_scope
     session.config = {
-        **session.config,
+        **(session.config or {}),
         "category_weights": payload.category_weights,
         "enabled_eval_case_ids": payload.enabled_eval_case_ids,
     }
@@ -95,7 +105,7 @@ def configure_session(session_id: str, payload: WizardConfigRequest, db: Session
 
     session.strategy_md = StrategyGenerator().generate(diagnostic, payload.optimization_scope)
     db.add(session)
-    db.commit()
+    commit_with_rollback(db, "configure training session")
     db.refresh(session)
 
     return {
@@ -116,7 +126,7 @@ async def start_session(session_id: str, db: Session = Depends(get_db)) -> dict:
     session.status = SessionStatus.RUNNING
     session.started_at = datetime.utcnow()
     db.add(session)
-    db.commit()
+    commit_with_rollback(db, "start training session")
     db.refresh(session)
 
     await live_manager.broadcast(

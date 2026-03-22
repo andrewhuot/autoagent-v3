@@ -1,5 +1,5 @@
 export const AGENT_COLORS: Record<string, string> = {
-  Orchestrator: "#5b6af0",
+  CustomerSupportOrchestrator: "#5b6af0",
   AuthAgent: "#40d0c0",
   BillingAgent: "#50a0f0",
   RefundAgent: "#36d8a0",

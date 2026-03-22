@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.api.error_handling import commit_with_rollback, parse_enum_value
 from app.engine import MultiLevelEvalGenerator
 from app.models.entities import AgentTree, EvalCase, EvalSuite
 from app.models.enums import EvalLevel, EvalSource
@@ -28,6 +29,9 @@ def list_suites(tree_id: str | None = None, db: Session = Depends(get_db)) -> li
 def create_suite(payload: EvalSuiteCreate, db: Session = Depends(get_db)) -> EvalSuite:
     """Create an eval suite for a tree."""
 
+    if not db.get(AgentTree, payload.tree_id):
+        raise HTTPException(status_code=404, detail="Tree not found")
+
     suite = EvalSuite(
         tree_id=payload.tree_id,
         name=payload.name,
@@ -36,7 +40,7 @@ def create_suite(payload: EvalSuiteCreate, db: Session = Depends(get_db)) -> Eva
         routing_floor=payload.routing_floor,
     )
     db.add(suite)
-    db.commit()
+    commit_with_rollback(db, "create eval suite")
     db.refresh(suite)
     return suite
 
@@ -45,12 +49,18 @@ def create_suite(payload: EvalSuiteCreate, db: Session = Depends(get_db)) -> Eva
 def create_case(payload: EvalCaseCreate, db: Session = Depends(get_db)) -> EvalCase:
     """Create an eval case under a suite."""
 
+    if not db.get(EvalSuite, payload.suite_id):
+        raise HTTPException(status_code=404, detail="Eval suite not found")
+
+    level = parse_enum_value(payload.level, EvalLevel, "level")
+    source = parse_enum_value(payload.source, EvalSource, "source")
+
     case = EvalCase(
         suite_id=payload.suite_id,
-        level=EvalLevel(payload.level),
+        level=level,
         target_agent_id=payload.target_agent_id,
         category=payload.category,
-        source=EvalSource(payload.source),
+        source=source,
         enabled=payload.enabled,
         scenario_json=payload.scenario_json,
         expected_agent_sequence=payload.expected_agent_sequence,
@@ -59,7 +69,7 @@ def create_case(payload: EvalCaseCreate, db: Session = Depends(get_db)) -> EvalC
         mock_tool_outputs=payload.mock_tool_outputs,
     )
     db.add(case)
-    db.commit()
+    commit_with_rollback(db, "create eval case")
     db.refresh(case)
     return case
 

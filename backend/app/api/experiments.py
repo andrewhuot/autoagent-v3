@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.api.error_handling import commit_with_rollback
 from app.engine import MultiAgentProposer, ParetoScorer, ScopedEvalRunner
-from app.models.entities import Experiment, TrainingSession
+from app.models.entities import Agent, Experiment, TrainingSession
 from app.models.enums import ExperimentStatus
 from app.schemas.domain import ExperimentCreate, ExperimentRead
 
@@ -37,6 +38,12 @@ def get_experiment(experiment_id: str, db: Session = Depends(get_db)) -> Experim
 @router.post("/", response_model=ExperimentRead)
 def create_experiment(payload: ExperimentCreate, db: Session = Depends(get_db)) -> Experiment:
     """Persist a new experiment branch result."""
+
+    session = db.get(TrainingSession, payload.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if payload.target_agent_id and not db.get(Agent, payload.target_agent_id):
+        raise HTTPException(status_code=404, detail="Target agent not found")
 
     score_card = ParetoScorer().score(
         {
@@ -75,7 +82,7 @@ def create_experiment(payload: ExperimentCreate, db: Session = Depends(get_db)) 
         duration_ms=payload.duration_ms,
     )
     db.add(experiment)
-    db.commit()
+    commit_with_rollback(db, "create experiment")
     db.refresh(experiment)
     return experiment
 
@@ -83,6 +90,9 @@ def create_experiment(payload: ExperimentCreate, db: Session = Depends(get_db)) 
 @router.post("/propose/{session_id}")
 def propose_wave(session_id: str, branch_count: int = 3, db: Session = Depends(get_db)) -> dict:
     """Generate a new wave of hypotheses from session context."""
+
+    if branch_count < 1 or branch_count > 26:
+        raise HTTPException(status_code=400, detail="branch_count must be between 1 and 26")
 
     session = db.get(TrainingSession, session_id)
     if not session:
