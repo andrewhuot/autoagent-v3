@@ -1,4 +1,4 @@
-.PHONY: dev seed test clean setup
+.PHONY: dev dev-bg seed test stop clean setup logs shell
 
 # Start all services
 dev:
@@ -8,13 +8,15 @@ dev:
 dev-bg:
 	docker compose up --build -d
 
-# Run database migrations and seed data
+# Start dependencies and seed demo data
 seed:
+	docker compose up -d postgres redis backend
 	docker compose exec backend python -m app.seed
 
 # Run backend tests
 test:
-	docker compose exec backend pytest -v
+	docker compose up -d postgres redis backend
+	docker compose exec backend python -m pytest tests/ -v
 
 # Stop all services
 stop:

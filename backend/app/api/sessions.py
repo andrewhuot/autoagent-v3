@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from app.models.enums import SessionStatus
 from app.schemas.domain import BriefingResponse, TrainingSessionCreate, TrainingSessionRead, WizardConfigRequest
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/", response_model=list[TrainingSessionRead])
@@ -129,13 +131,16 @@ async def start_session(session_id: str, db: Session = Depends(get_db)) -> dict:
     commit_with_rollback(db, "start training session")
     db.refresh(session)
 
-    await live_manager.broadcast(
-        {
-            "type": "session_started",
-            "session_id": session_id,
-            "timestamp": session.started_at.isoformat(),
-        }
-    )
+    try:
+        await live_manager.broadcast(
+            {
+                "type": "session_started",
+                "session_id": session_id,
+                "timestamp": session.started_at.isoformat(),
+            }
+        )
+    except Exception:  # pragma: no cover - best-effort live update path.
+        logger.exception("Failed to broadcast session start event for session %s", session_id)
 
     return {"status": "running", "session_id": session_id}
 

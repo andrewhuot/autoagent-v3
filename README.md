@@ -66,6 +66,12 @@ AutoAgent discovers, tests, and deploys improvements to AI agent trees — orche
 
 ## Quick Start
 
+### Prerequisites
+
+- Python 3.11+
+- Node.js 20+
+- Docker (for Compose workflow)
+
 ### Local Development (recommended)
 
 ```bash
@@ -78,7 +84,7 @@ uvicorn app.main:app --reload --port 8000
 # DB auto-creates and seeds on startup (SQLite)
 
 # Frontend (separate terminal)
-cd frontend
+cd ../frontend
 npm install
 npm run dev
 # Open http://localhost:5173
@@ -96,11 +102,19 @@ make setup
 
 ```bash
 make dev          # Start all services (foreground)
-make seed         # Re-seed the database
-make test         # Run backend pytest suite
+make seed         # Seed demo data if missing (idempotent)
+make test         # Run backend pytest suite in backend container
 make stop         # Stop all services
 make clean        # Stop + remove volumes
 make logs         # Tail all service logs
+```
+
+### Run Backend Tests Locally
+
+```bash
+cd backend
+source .venv/bin/activate
+python3 -m pytest tests/ -v
 ```
 
 ---
