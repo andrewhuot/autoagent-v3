@@ -37,3 +37,6 @@ alembic.ini.local
 .coverage
 htmlcov/
 .pytest_cache/
+frontend/dist/
+autoagent.db
+*.db
