@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-void: #050510;
+  --color-surface: #0a0a1e;
+  --color-border: #161640;
+  --color-text: #e4e4f0;
+  --color-text-soft: #8888aa;
+  --color-text-dim: #444466;
+  --color-accent: #5b6af0;
+  --color-green: #36d8a0;
+  --color-red: #f06070;
+  --color-amber: #f0b040;
+  --color-blue: #50a0f0;
+  --color-purple: #a070f0;
+  --color-teal: #40d0c0;
+
+  --color-orchestrator: #5b6af0;
+  --color-auth: #40d0c0;
+  --color-billing: #50a0f0;
+  --color-refund: #36d8a0;
+  --color-techsupport: #a070f0;
+  --color-escalation: #f0b040;
+  --color-eligibility: #60c890;
+  --color-execution: #70b8d0;
+
+  --font-sans: 'Sora', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+}
+
+:root {
+  --void: #050510;
+  --surface: #0a0a1e;
+  --border: #161640;
+  --text: #e4e4f0;
+  --text-soft: #8888aa;
+  --text-dim: #444466;
+  --accent: #5b6af0;
+  --green: #36d8a0;
+  --red: #f06070;
+  --amber: #f0b040;
+  --blue: #50a0f0;
+  --purple: #a070f0;
+  --teal: #40d0c0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--void);
+  color: var(--text);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Sora', system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}
