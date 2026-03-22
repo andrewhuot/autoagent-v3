@@ -23,7 +23,7 @@ import {
 } from "@/lib/constants";
 import { mockBriefingData } from "@/lib/mockData";
 import { useApiWithFallback } from "@/hooks/useApi";
-import { fetchBriefing } from "@/lib/api";
+import { fetchBriefing, fetchSessions } from "@/lib/api";
 import type { BriefingData } from "@/types";
 
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
@@ -53,7 +53,11 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
 
 export default function MorningBriefing() {
   const { data: briefing } = useApiWithFallback<BriefingData>(
-    () => fetchBriefing("sess-1"),
+    async () => {
+      const sessions = await fetchSessions();
+      const sessionId = sessions.length > 0 ? sessions[0].id : "sess-1";
+      return fetchBriefing(sessionId);
+    },
     mockBriefingData
   );
 

@@ -29,6 +29,7 @@ class AgentTreeRead(AgentTreeBase):
     score: float = 0.0
     score_before: float = 0.0
     status: str = "idle"
+    agent_count: int = 0
     created_at: datetime
     updated_at: datetime
 

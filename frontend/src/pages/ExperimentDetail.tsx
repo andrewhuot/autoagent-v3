@@ -345,7 +345,7 @@ export default function ExperimentDetail() {
                   "Delta",
                 ]}
               />
-              <Bar dataKey="delta" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="delta" radius={[0, 4, 4, 0]} maxBarSize={40}>
                 {barData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}

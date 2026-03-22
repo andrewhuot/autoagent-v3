@@ -158,6 +158,29 @@ def seed_database(db: Session) -> dict:
     db.add_all([tree2, tree3])
     db.flush()
 
+    # ── Agents for secondary trees (so agent_count is non-zero) ──
+    for t, specs in [
+        (tree2, [
+            ("SalesOrchestrator", AgentRole.ORCHESTRATOR, "Routes leads to qualification stages"),
+            ("LeadScorer", AgentRole.SPECIALIST, "Scores inbound leads by intent signals"),
+            ("QualificationAgent", AgentRole.SPECIALIST, "Runs BANT qualification framework"),
+            ("HandoffAgent", AgentRole.SPECIALIST, "Transfers qualified leads to sales reps"),
+        ]),
+        (tree3, [
+            ("OnboardingOrchestrator", AgentRole.ORCHESTRATOR, "Guides new users through setup"),
+            ("FeatureTourAgent", AgentRole.SPECIALIST, "Walks users through key features"),
+            ("ActivationAgent", AgentRole.SPECIALIST, "Tracks and nudges activation milestones"),
+        ]),
+    ]:
+        for name, role, desc in specs:
+            db.add(Agent(
+                tree_id=t.id, name=name, agent_type=AgentType.LLM_AGENT,
+                role=role, instruction=f"{desc}.", description=desc,
+                model="gemini-2.5-flash", tools=[], config_snapshot=f"{name}_v1",
+                score=t.score + (hash(name) % 5 - 2), score_before=t.score_before + (hash(name) % 4 - 1),
+            ))
+    db.flush()
+
     # ── Orchestrator ──
     orchestrator = Agent(
         tree_id=tree.id,

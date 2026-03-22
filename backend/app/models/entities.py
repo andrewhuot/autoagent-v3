@@ -46,7 +46,12 @@ class AgentTree(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    agents: Mapped[list[Agent]] = relationship("Agent", back_populates="tree", cascade="all, delete-orphan")
+    agents: Mapped[list[Agent]] = relationship("Agent", back_populates="tree", cascade="all, delete-orphan", lazy="selectin")
+
+    @property
+    def agent_count(self) -> int:
+        """Number of agents in this tree."""
+        return len(self.agents) if self.agents else 0
     eval_suites: Mapped[list[EvalSuite]] = relationship("EvalSuite", back_populates="tree", cascade="all, delete-orphan")
     sessions: Mapped[list[TrainingSession]] = relationship("TrainingSession", back_populates="tree", cascade="all, delete-orphan")
 
