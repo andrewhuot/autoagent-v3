@@ -10,6 +10,7 @@ import TrainingLiveView from "@/pages/TrainingLiveView";
 import ExperimentDetail from "@/pages/ExperimentDetail";
 import ConfigWizard from "@/pages/ConfigWizard";
 import DeployPage from "@/pages/DeployPage";
+import AgentStudio from "@/pages/AgentStudio";
 
 function HealthScanWrapper() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,7 @@ export default function App() {
   const navItems = [
     { to: "/", label: "Briefing", icon: "\u25C8" },
     { to: "/trees", label: "Agent Trees", icon: "\u25E6" },
+    { to: "/studio", label: "Studio", icon: "\u2726" },
     { to: `/training/${latestSessionId}`, label: "Training", icon: "\u25B7" },
     { to: "/configure", label: "Configure", icon: "\u2699" },
     { to: "/deploy", label: "Deploy", icon: "\u2B06" },
@@ -99,6 +101,7 @@ export default function App() {
               <Route path="/trees" element={<TreeList />} />
               <Route path="/trees/:id" element={<TreeDetail />} />
               <Route path="/health/:id" element={<HealthScanWrapper />} />
+              <Route path="/studio" element={<AgentStudio />} />
               <Route path="/training/:id" element={<TrainingLiveView />} />
               <Route path="/experiments/:id" element={<ExperimentDetail />} />
               <Route path="/configure" element={<ConfigWizard />} />
